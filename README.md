@@ -1,191 +1,284 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Painel Técnico - Segurança do Trabalho</title>
+
+<!-- ====== Bibliotecas para exportação ====== -->
+<!-- SheetJS para Excel -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+<!-- jsPDF + autoTable para PDF -->
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js" defer></script>
+
 <style>
-  /* ====== SEU ESTILO ORIGINAL ====== */
-  body { font-family: Arial, sans-serif; margin: 0; background: #f0f0f5; color:#000; }
-  header { background: #2c3e50; color: #fff; padding: 15px; text-align: center; position: relative; }
+  /* ====== ESTILO BASE MELHORADO ====== */
+  :root{
+    --bg:#f5f7fb;
+    --fg:#111827;
+    --muted:#6b7280;
+    --primary:#2c3e50;
+    --primary-700:#1f2b39;
+    --nav:#34495e;
+    --card:#ffffff;
+    --border:#e5e7eb;
+    --accent:#6366f1;
+    --ok:#22c55e;
+    --warn:#f59e0b;
+    --err:#ef4444;
+    --shadow:0 10px 20px rgba(0,0,0,.08), 0 6px 6px rgba(0,0,0,.06);
+  }
+  *{box-sizing:border-box}
+  body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin:0; background: var(--bg); color:var(--fg); }
+  header { background: linear-gradient(135deg, var(--primary), #1d2935); color: #fff; padding: 22px 16px; text-align: center; position: sticky; top:0; z-index: 50; box-shadow: var(--shadow); }
+  header h1{ margin:0; font-size: clamp(1.2rem, 2.5vw, 1.6rem); letter-spacing:.3px }
   nav {
-    background: #34495e;
+    background: var(--nav);
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
+    gap:4px;
+    padding: 6px;
+    position: sticky;
+    top:72px;
+    z-index: 49;
   }
   nav button {
-    background: none; border: none; color: #fff; padding: 15px 20px;
-    font-size: 1rem; cursor: pointer; transition: background 0.2s;
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,0.12); color: #fff; padding: 10px 14px;
+    font-size: .95rem; cursor: pointer; transition: transform .08s ease, background .2s ease, border-color .2s ease;
+    border-radius: 10px;
   }
-  nav button:hover { background: #2c3e50; }
-  section { display: none; padding: 20px; }
-  section.active { display: block; }
-  h2 { color: #2c3e50; border-bottom: 2px solid #2c3e50; padding-bottom: 5px; }
-  button.action {
-    background-color: #2c3e50; color: white; padding: 8px 14px;
-    font-size: 0.9rem; border: none; border-radius: 4px; cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  button.action:hover { background-color: #34495e; }
-  textarea, input, select {
-    width: 100%; padding: 10px; margin-bottom: 15px;
-    border: 1px solid #ccc; border-radius: 5px; font-size: 1rem; background:#fff; color:#000;
-  }
-  .output, .bloco {
-    background: #fff; padding: 15px; border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 15px;
-  }
-  .bloco.fisico { border-left: 6px solid #007bff; }
-  .bloco.biologico { border-left: 6px solid #28a745; }
-  .bloco.quimico { border-left: 6px solid #dc3545; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
-  .item { background: white; border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
-  .item img { width: 100px; height: auto; margin-bottom: 10px; }
-  footer { text-align: center; font-size: 0.8rem; color: #555; padding: 10px; background: #eaeaea; margin-top: 20px; }
-  small { color: #555; }
+  nav button:hover { background: rgba(255,255,255,.14); transform: translateY(-1px); }
+  nav button.active { background: #111827; border-color: rgba(255,255,255,.25); }
 
-  /* ====== Botão de tema (não altera layout do header) ====== */
   .theme-toggle {
     position: absolute; right: 12px; top: 12px;
-    background: #1f2937; color: #fff; border: 1px solid rgba(255,255,255,0.2);
-    padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.9rem;
+    background: #1f2937; color: #fff; border: 1px solid rgba(255,255,255,0.25);
+    padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 0.9rem;
   }
   .theme-toggle:hover { filter: brightness(1.1); }
 
+  main{ max-width: 1100px; margin: 18px auto; padding: 0 14px; }
+  section { display: none; }
+  section.active { display: block; }
+
+  h2 { color: var(--primary); border-bottom: 2px solid var(--primary); padding-bottom: 6px; font-size: 1.15rem; display:flex; align-items:center; gap:10px }
+  h2 .tools{ margin-left:auto; display:flex; gap:8px; }
+
+  .action {
+    background-color: var(--primary); color: white; padding: 9px 14px;
+    font-size: 0.9rem; border: none; border-radius: 8px; cursor: pointer;
+    transition: transform .08s ease, background-color 0.2s ease, box-shadow .2s;
+    box-shadow: var(--shadow);
+  }
+  .action:hover { background-color: var(--primary-700); transform: translateY(-1px); }
+
+  textarea, input, select {
+    width: 100%; padding: 11px 12px; margin-bottom: 14px;
+    border: 1px solid var(--border); border-radius: 10px; font-size: 1rem; background:var(--card); color:var(--fg);
+    box-shadow: 0 1px 0 rgba(0,0,0,.02);
+  }
+
+  .output, .bloco {
+    background: var(--card); padding: 16px; border-radius: 12px;
+    box-shadow: var(--shadow); margin-bottom: 16px; border:1px solid var(--border);
+  }
+  .bloco h3{ margin-top:0 }
+
+  .bloco.fisico { border-left: 6px solid #3b82f6; }
+  .bloco.biologico { border-left: 6px solid #22c55e; }
+  .bloco.quimico { border-left: 6px solid #ef4444; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+  .item { background: var(--card); border-radius: 14px; padding: 14px; text-align: center; box-shadow: var(--shadow); border:1px solid var(--border); display:flex; flex-direction:column; gap:8px }
+  .item img { width: 100%; max-width: 140px; height: auto; margin: 0 auto 6px; border-radius:10px; object-fit: cover; }
+  .item h3{ font-size:1rem; margin:4px 0 0 0 }
+  .muted{ color: var(--muted); font-size:.9rem }
+  footer { text-align: center; font-size: 0.8rem; color: #555; padding: 12px; background: #eaeaea; margin-top: 26px; border-top:1px solid var(--border) }
+  small { color: #6b7280; }
+
+  /* ====== BADGES ====== */
+  .badge{
+    display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius: 999px;
+    background: #eef2ff; color:#3730a3; border:1px solid #e0e7ff; font-size:.8rem
+  }
+
   /* ====== TEMA ESCURO (override mínimo) ====== */
-  body.dark { background: #0f1115; color: #e5e7eb; }
-  body.dark header { background: #111827; color: #e5e7eb; }
+  body.dark { --bg:#0f1115; --fg:#e5e7eb; --muted:#9ca3af; --primary:#111827; --primary-700:#0b1220; --nav:#1f2937; --card:#111827; --border:#1f2937; --shadow: 0 8px 20px rgba(0,0,0,.45), 0 2px 6px rgba(0,0,0,.35); }
+  body.dark header { background: linear-gradient(135deg, #111827, #0b1220); color: #e5e7eb; }
   body.dark nav { background: #1f2937; }
-  body.dark nav button { color: #e5e7eb; }
-  body.dark nav button:hover { background: #111827; }
+  body.dark nav button { color: #e5e7eb; border-color: rgba(255,255,255,.1) }
+  body.dark nav button:hover, body.dark nav button.active { background: #111827; }
 
   body.dark h2 { color: #e5e7eb; border-color: #374151; }
-  body.dark textarea, body.dark input, body.dark select {
-    background: #111827; color: #e5e7eb; border-color: #374151;
-  }
-  body.dark .output, body.dark .bloco, body.dark .item {
-    background: #111827; color: #e5e7eb; box-shadow: 0 2px 5px rgba(0,0,0,0.4);
-  }
+  body.dark textarea, body.dark input, body.dark select { background: #111827; color: #e5e7eb; border-color: #374151; }
+  body.dark .output, body.dark .bloco, body.dark .item { background: #111827; color: #e5e7eb; }
+  body.dark small, body.dark .muted { color: #9ca3af; }
+  body.dark footer { background: #0f1115; color: #9ca3af; border-top-color:#111827 }
+
   body.dark .bloco.fisico { border-left-color: #3b82f6; }
   body.dark .bloco.biologico { border-left-color: #22c55e; }
   body.dark .bloco.quimico { border-left-color: #ef4444; }
-  body.dark small { color: #9ca3af; }
-  body.dark footer { background: #111827; color: #9ca3af; }
 
-  body.dark button.action {
-    background: #1f2937; color:#e5e7eb;
+  /* ====== TOASTS ====== */
+  .toast{
+    position: fixed; right: 16px; bottom: 16px; background: #111827; color:#e5e7eb; padding: 12px 14px; border-radius: 10px; box-shadow: var(--shadow); opacity:0; transform: translateY(8px);
+    transition: opacity .2s, transform .2s; z-index: 80; border:1px solid rgba(255,255,255,.12)
   }
-  body.dark button.action:hover { background: #111827; }
+  .toast.show{ opacity:1; transform: translateY(0) }
+  .toast.ok{ background:#065f46 } /* verde escuro */
+  .toast.err{ background:#7f1d1d } /* vermelho escuro */
+
+  /* ====== MODAL (Senha) ====== */
+  .modal-backdrop{
+    position: fixed; inset:0; background: rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; z-index: 90; padding: 16px;
+  }
+  .modal{
+    width: 100%; max-width: 420px; background: var(--card); border:1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); padding: 18px;
+  }
+  .modal h3{ margin:0 0 8px 0 }
+  .modal-actions{ display:flex; gap:10px; justify-content:flex-end; }
+
+  /* ====== UTIL ====== */
+  .row{ display:flex; gap:10px; flex-wrap:wrap }
+  .row > *{ flex: 1 1 200px }
+  .hint{ font-size:.85rem; color:var(--muted) }
 </style>
 </head>
 <body>
 
 <header>
   <h1>Painel Técnico - Segurança do Trabalho</h1>
-  <button class="theme-toggle" onclick="toggleTheme()">Alternar Tema</button>
+  <button class="theme-toggle" onclick="toggleTheme()" aria-label="Alternar Tema">Alternar Tema</button>
 </header>
 
-<nav>
-  <button onclick="mostrar('epis')">📒 Catálogo de EPIs</button>
-  <button onclick="mostrar('riscos')">🧪 Avaliação de Riscos</button>
-  <button onclick="mostrar('empresas')">🏢 Frases com Empresa</button>
-  <button onclick="mostrar('treinamento')">📚 Treinamento NR-06</button>
-  <button onclick="mostrar('riscos_empresas')">📋 Riscos por Empresa</button>
+<nav id="tabs" role="tablist" aria-label="Navegação principal">
+  <button role="tab" aria-selected="true" class="active" onclick="mostrar('epis', this)">📒 Catálogo de EPIs</button>
+  <button role="tab" aria-selected="false" onclick="mostrar('riscos', this, true)">🧪 Avaliação de Riscos</button>
+  <button role="tab" aria-selected="false" onclick="mostrar('empresas', this)">🏢 Frases com Empresa</button>
+  <button role="tab" aria-selected="false" onclick="mostrar('treinamento', this, true)">📚 Treinamento NR-06</button>
+  <button role="tab" aria-selected="false" onclick="mostrar('riscos_empresas', this, true)">📋 Riscos por Empresa</button>
 </nav>
 
 <main>
   <!-- EPIs -->
-  <section id="epis" class="active">
-    <h2>Catálogo de EPIs</h2>
-    <input type="text" id="searchInput" placeholder="Buscar por nome ou CA..." onkeyup="searchItems()" />
-    <select id="categoryFilter" onchange="searchItems()">
-      <option value="">Todas as Categorias</option>
-    </select>
-    <div class="grid" id="catalog"></div>
+  <section id="epis" class="active" aria-labelledby="tab-epis">
+    <h2>
+      Catálogo de EPIs
+      <span class="tools">
+        <button class="action" onclick="exportEpisExcel()" aria-label="Exportar EPIs para Excel">Exportar Excel</button>
+        <button class="action" onclick="exportEpisPDF()" aria-label="Exportar EPIs para PDF">Exportar PDF</button>
+      </span>
+    </h2>
+    <div class="row">
+      <input type="text" id="searchInput" placeholder="Buscar por nome, CA ou categoria..." onkeyup="searchItems()" aria-label="Buscar EPIs por nome, CA ou categoria"/>
+      <select id="categoryFilter" onchange="searchItems()" aria-label="Filtrar por categoria">
+        <option value="">Todas as Categorias</option>
+      </select>
+    </div>
+    <div class="grid" id="catalog" aria-live="polite"></div>
+    <p class="hint">Dica: clique em “CA Nº” para copiar o número rapidamente.</p>
   </section>
 
   <!-- Avaliação de Riscos -->
-  <section id="riscos">
-    <h2>Avaliação de Riscos</h2>
-    <select id="filtro" onchange="filtrarRiscos()">
-      <option value="todos">Todos</option>
-      <option value="fisico">Físico</option>
-      <option value="biologico">Biológico</option>
-      <option value="quimico">Químico</option>
-    </select>
+  <section id="riscos" aria-labelledby="tab-riscos">
+    <h2>
+      Avaliação de Riscos
+      <span class="tools">
+        <button class="action" onclick="exportTextoRiscosPDF()">Exportar PDF</button>
+      </span>
+    </h2>
+    <div class="row">
+      <select id="filtro" onchange="filtrarRiscos()" aria-label="Filtro de riscos">
+        <option value="todos">Todos</option>
+        <option value="fisico">Físico</option>
+        <option value="biologico">Biológico</option>
+        <option value="quimico">Químico</option>
+      </select>
+    </div>
     <div id="conteudo">
       <!-- Físico -->
       <div class="bloco fisico" data-risco="fisico">
         <h3>📘 FÍSICO - Parte 1</h3>
         <p>De acordo com a inspeção realizada no ambiente de trabalho e atividades executadas pelo trabalhador que desempenha este cargo, e de acordo com a NR 15 da portaria 3.214/78 do M.T.E, o mesmo está exposto a agentes ambientais nocivos a saúde ao risco Físico.</p>
-        <button class="action" onclick="copiarTexto(this.previousElementSibling.innerText)">Copiar</button>
+        <button class="action" data-copy>Copiar</button>
       </div>
       <div class="bloco fisico" data-risco="fisico">
         <h3>📘 FÍSICO - Parte 2</h3>
         <p>As atividades de trabalho realizadas neste LTCAT não são consideradas de Condições Especiais de Trabalho e, portanto, não são prejudiciais à saúde ou integridade física dos trabalhadores segundo os requisitos do Decreto Federal 3048 / 1999 e seu Anexo IV.</p>
-        <button class="action" onclick="copiarTexto(this.previousElementSibling.innerText)">Copiar</button>
+        <button class="action" data-copy>Copiar</button>
       </div>
       <!-- Biológico -->
       <div class="bloco biologico" data-risco="biologico">
         <h3>🧬 BIOLÓGICO - Parte 1</h3>
         <p>De acordo com a inspeção realizada no ambiente de trabalho e atividades executadas pelo trabalhador que desempenha este cargo, e de acordo com a NR 15 da portaria 3.214/78 do M.T.E, o mesmo está exposto a agentes ambientais nocivos a saúde ao risco Biológico.</p>
-        <button class="action" onclick="copiarTexto(this.previousElementSibling.innerText)">Copiar</button>
+        <button class="action" data-copy>Copiar</button>
       </div>
       <div class="bloco biologico" data-risco="biologico">
         <h3>🧬 BIOLÓGICO - Parte 2</h3>
         <p>As atividades de trabalho realizadas neste LTCAT não são consideradas de Condições Especiais de Trabalho e, portanto, não são prejudiciais à saúde ou integridade física dos trabalhadores segundo os requisitos do Decreto Federal 3048 / 1999 e seu Anexo IV.</p>
-        <button class="action" onclick="copiarTexto(this.previousElementSibling.innerText)">Copiar</button>
+        <button class="action" data-copy>Copiar</button>
       </div>
       <div class="bloco biologico" data-risco="biologico">
         <h3>🧬 BIOLÓGICO - Parte 3</h3>
         <p>As atividades de trabalho realizadas neste LTCAT são consideradas de Condições Especiais de Trabalho e, portanto, são prejudiciais à saúde ou integridade física dos trabalhadores segundo os requisitos do Decreto Federal 3048 / 1999 e seu Anexo IV.</p>
-        <button class="action" onclick="copiarTexto(this.previousElementSibling.innerText)">Copiar</button>
+        <button class="action" data-copy>Copiar</button>
       </div>
       <!-- Químico -->
       <div class="bloco quimico" data-risco="quimico">
         <h3>🧪 QUÍMICO - Parte 1</h3>
         <p>De acordo com a inspeção realizada no ambiente de trabalho e atividades executadas pelo trabalhador que desempenha este cargo, e de acordo com a NR 15 da portaria 3.214/78 do M.T.E, o mesmo está exposto a agentes ambientais nocivos a saúde ao risco Químico.</p>
-        <button class="action" onclick="copiarTexto(this.previousElementSibling.innerText)">Copiar</button>
+        <button class="action" data-copy>Copiar</button>
       </div>
       <div class="bloco quimico" data-risco="quimico">
         <h3>🧪 QUÍMICO - Parte 2</h3>
         <p>As atividades de trabalho realizadas neste LTCAT não são consideradas de Condições Especiais de Trabalho e, portanto, não são prejudiciais à saúde ou integridade física dos trabalhadores segundo os requisitos do Decreto Federal 3048 / 1999 e seu Anexo IV.</p>
-        <button class="action" onclick="copiarTexto(this.previousElementSibling.innerText)">Copiar</button>
+        <button class="action" data-copy>Copiar</button>
       </div>
       <div class="bloco quimico" data-risco="quimico">
         <h3>🧪 QUÍMICO - Parte 3</h3>
         <p>As atividades de trabalho realizadas neste LTCAT são consideradas de Condições Especiais de Trabalho e, portanto, são prejudiciais à saúde ou integridade física dos trabalhadores segundo os requisitos do Decreto Federal 3048 / 1999 e seu Anexo IV.</p>
-        <button class="action" onclick="copiarTexto(this.previousElementSibling.innerText)">Copiar</button>
+        <button class="action" data-copy>Copiar</button>
       </div>
     </div>
   </section>
 
   <!-- Frases com Empresa -->
-  <section id="empresas">
+  <section id="empresas" aria-labelledby="tab-empresas">
     <h2>Gerador de Frases com Empresa</h2>
     <textarea id="nomes" rows="6" placeholder="Um nome por linha"></textarea>
-    <input type="text" id="empresa" placeholder="Nome da empresa" />
-    <input type="text" id="data" placeholder="Data" />
-    <button class="action" onclick="gerarFrases()">Gerar Frases</button>
-    <div class="output" id="resultado"></div>
+    <div class="row">
+      <input type="text" id="empresa" placeholder="Nome da empresa" />
+      <input type="text" id="data" placeholder="Data" />
+    </div>
+    <div class="row">
+      <button class="action" onclick="gerarFrases()">Gerar Frases</button>
+      <button class="action" onclick="exportFrasesTXT()">Exportar TXT</button>
+    </div>
+    <div class="output" id="resultado" aria-live="polite"></div>
   </section>
 
   <!-- Treinamento -->
-  <section id="treinamento">
+  <section id="treinamento" aria-labelledby="tab-treinamento">
     <h2>Treinamento NR-06</h2>
-    <div class="bloco"><h3>Parte 1</h3><p>Treinamento de NR-06</p><button class="action" onclick="copiarTexto(this.previousElementSibling.innerText)">Copiar</button></div>
-    <div class="bloco"><h3>Parte 2</h3><p>Coordenador da empresa</p><button class="action" onclick="copiarTexto(this.previousElementSibling.innerText)">Copiar</button></div>
-    <div class="bloco"><h3>Parte 3</h3><p>Permanente</p><button class="action" onclick="copiarTexto(this.previousElementSibling.innerText)">Copiar</button></div>
-    <div class="bloco"><h3>Parte 4</h3><p>Ambiente laboral</p><button class="action" onclick="copiarTexto(this.previousElementSibling.innerText)">Copiar</button></div>
-    <div class="bloco"><h3>Parte 5</h3><p>Conscientizar os colaboradores sobre o uso de EPI.</p><button class="action" onclick="copiarTexto(this.previousElementSibling.innerText)">Copiar</button></div>
-    <div class="bloco"><h3>Parte 6</h3><p>Palestra NR-06, treinamento de EPI.</p><button class="action" onclick="copiarTexto(this.previousElementSibling.innerText)">Copiar</button></div>
+    <div class="bloco"><h3>Parte 1</h3><p>Treinamento de NR-06</p><button class="action" data-copy>Copiar</button></div>
+    <div class="bloco"><h3>Parte 2</h3><p>Coordenador da empresa</p><button class="action" data-copy>Copiar</button></div>
+    <div class="bloco"><h3>Parte 3</h3><p>Permanente</p><button class="action" data-copy>Copiar</button></div>
+    <div class="bloco"><h3>Parte 4</h3><p>Ambiente laboral</p><button class="action" data-copy>Copiar</button></div>
+    <div class="bloco"><h3>Parte 5</h3><p>Conscientizar os colaboradores sobre o uso de EPI.</p><button class="action" data-copy>Copiar</button></div>
+    <div class="bloco"><h3>Parte 6</h3><p>Palestra NR-06, treinamento de EPI.</p><button class="action" data-copy>Copiar</button></div>
   </section>
 
   <!-- Riscos por Empresa -->
-  <section id="riscos_empresas">
-    <h2>Riscos por Empresa</h2>
+  <section id="riscos_empresas" aria-labelledby="tab-riscos-empresas">
+    <h2>
+      Riscos por Empresa
+      <span class="tools">
+        <button class="action" onclick="exportRiscosExcel()">Exportar Excel</button>
+        <button class="action" onclick="exportRiscosPDF()">Exportar PDF</button>
+      </span>
+    </h2>
     <input type="text" id="buscaRiscos" placeholder="Buscar risco, empresa ou setor..." onkeyup="filtrarRiscosEmpresas()" />
     <div id="listaRiscosEmpresas"></div>
   </section>
@@ -193,31 +286,88 @@
 
 <footer>
   Desenvolvido para fins técnicos de SST | &copy; 2025
-             Desenvolvido por Vytor Suporte Técnico
+  &nbsp;•&nbsp; Desenvolvido por Vytor Suporte Técnico
 </footer>
 
-<script>
-  /* ===== Proteção por senha nas seções ===== */
-  const senhaCorreta = "SG393"; // altere para a senha que você quiser
-  const secoesProtegidas = ["riscos", "treinamento", "riscos_empresas"];
+<!-- ===== Modal de Senha ===== -->
+<div class="modal-backdrop" id="modalSenha" role="dialog" aria-modal="true" aria-labelledby="tituloModalSenha" aria-describedby="descModalSenha">
+  <div class="modal">
+    <h3 id="tituloModalSenha">Acesso restrito</h3>
+    <p class="hint" id="descModalSenha">Informe a senha para acessar esta seção protegida.</p>
+    <input type="password" id="inputSenha" placeholder="Digite a senha..." />
+    <div class="modal-actions">
+      <button class="action" onclick="fecharModalSenha()">Cancelar</button>
+      <button class="action" onclick="confirmarSenha()">Confirmar</button>
+    </div>
+    <p id="erroSenha" class="hint" style="color:var(--err);margin:8px 2px 0 2px;display:none">Senha incorreta. Tente novamente.</p>
+  </div>
+</div>
 
-  function mostrar(secao) {
-    if (secoesProtegidas.includes(secao)) {
-      const senhaDigitada = prompt("Digite a senha para acessar esta seção:");
-      if (senhaDigitada !== senhaCorreta) {
-        alert("Senha incorreta! Acesso negado.");
+<!-- ===== Toast ===== -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+  /* ===== Proteção por senha nas seções (com persistência de sessão e modal) ===== */
+  const senhaCorreta = "SG393"; // a sua senha original
+  const secoesProtegidas = ["riscos", "treinamento", "riscos_empresas"];
+  let secaoSolicitada = null;
+
+  function mostrar(id, btnEl, protegido = false) {
+    // Protegida?
+    if (secoesProtegidas.includes(id) || protegido) {
+      // já autenticado nesta aba?
+      if (sessionStorage.getItem("sst_authed") === "true") {
+        ativarSecao(id, btnEl);
         return;
       }
+      // abrir modal
+      secaoSolicitada = { id, btnEl };
+      abrirModalSenha();
+      return;
     }
-    document.querySelectorAll("section").forEach(el => el.classList.remove("active"));
-    document.getElementById(secao).classList.add("active");
+    ativarSecao(id, btnEl);
   }
 
-  /* ===== Utilitário de cópia (faltava) ===== */
+  function ativarSecao(id, btnEl){
+    document.querySelectorAll("section").forEach(el => el.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+
+    // estado ativo na navegação
+    document.querySelectorAll("nav button").forEach(b => { b.classList.remove("active"); b.setAttribute("aria-selected","false"); });
+    if(btnEl){ btnEl.classList.add("active"); btnEl.setAttribute("aria-selected","true"); }
+  }
+
+  function abrirModalSenha(){
+    const m = document.getElementById('modalSenha');
+    document.getElementById('erroSenha').style.display = 'none';
+    document.getElementById('inputSenha').value = '';
+    m.style.display = 'flex';
+    setTimeout(()=>document.getElementById('inputSenha').focus(), 10);
+  }
+  function fecharModalSenha(){
+    document.getElementById('modalSenha').style.display = 'none';
+    secaoSolicitada = null;
+  }
+  function confirmarSenha(){
+    const val = document.getElementById('inputSenha').value.trim();
+    if(val === senhaCorreta){
+      sessionStorage.setItem("sst_authed", "true");
+      mostrar(secaoSolicitada.id, secaoSolicitada.btnEl);
+      fecharModalSenha();
+      showToast("Acesso liberado.", "ok");
+    }else{
+      document.getElementById('erroSenha').style.display = 'block';
+      showToast("Senha incorreta.", "err");
+    }
+  }
+  // ESC fecha modal
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && document.getElementById('modalSenha').style.display==='flex'){ fecharModalSenha(); } });
+
+  /* ===== Utilitário de cópia com Toast ===== */
   async function copiarTexto(texto) {
     try {
       await navigator.clipboard.writeText(texto);
-      alert("Copiado!");
+      showToast("Copiado!", "ok");
     } catch (e) {
       // fallback
       const ta = document.createElement('textarea');
@@ -226,11 +376,27 @@
       ta.select();
       document.execCommand('copy');
       document.body.removeChild(ta);
-      alert("Copiado!");
+      showToast("Copiado!", "ok");
     }
   }
+  // Delegação para botões com data-copy
+  document.addEventListener('click', (ev)=>{
+    const btn = ev.target.closest('button[data-copy]');
+    if(btn){
+      const p = btn.previousElementSibling; // parágrafo antes do botão
+      if(p) copiarTexto(p.innerText);
+    }
+  });
 
-  /* -------- EPIs (do PDF) -------- */
+  /* ===== Toast ===== */
+  function showToast(msg, kind){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (kind ? ' ' + (kind==='ok' ? 'ok' : kind==='err' ? 'err' : '') : '');
+    setTimeout(()=>{ t.classList.remove('show'); }, 1800);
+  }
+
+  /* -------- EPIs (LISTA ORIGINAL COMPLETA) -------- */
   const epis = [
     { categoria: "👢 Calçados", nome: "Botina de Elástico com Bico de PVC - Fujiwara", ca: "48.413", imagem: "https://alturaecia.com.br/wp-content/uploads/2022/03/Botina-de-Elastico-com-Bico-PVC-Usafe-Fujiwara.jpg" },
     { categoria: "👢 Calçados", nome: "Bota de Segurança Bico Composite NR10 Eletricista - Bracol", ca: "45.258", imagem: "https://d3bhvz7al37iy6.cloudfront.net/Custom/Content/Products/10/68/1068213_bota-seguranca-bracol-microfibra-composite-eletricista-38530_z2_638430758882818688.webp" },
@@ -295,20 +461,20 @@
   const categoryFilter = document.getElementById('categoryFilter');
 
   function renderCatalog(list) {
-    catalog.innerHTML = list.map(epi => `
-      <div class="item">
-        <img src="${epi.imagem}" alt="${epi.nome}" />
-        <div>${epi.categoria}</div>
-        <h3>${epi.nome}</h3>
-        <p>
-          <strong>CA Nº</strong>: ${epi.ca}
-          <button class="action" style="margin-left:8px" onclick="copiarTexto('${epi.ca}')">Copiar</button>
+    catalog.innerHTML = list.map((epi, idx) => `
+      <div class="item" role="article" aria-labelledby="epi-${idx}-title">
+        <img src="${epi.imagem}" alt="${epi.nome}" loading="lazy" />
+        <div class="muted">${epi.categoria}</div>
+        <h3 id="epi-${idx}-title">${epi.nome}</h3>
+        <p class="muted">
+          <span class="badge" title="Certificado de Aprovação">CA Nº: <strong>${epi.ca}</strong></span>
         </p>
+        <button class="action" onclick="copiarTexto('${epi.ca.replace(/'/g, "\\'")}')">Copiar CA</button>
       </div>`).join('');
   }
 
   function populateCategoryFilter() {
-    const categories = [...new Set(epis.map(e => e.categoria))];
+    const categories = [...new Set(epis.map(e => e.categoria))].sort((a,b)=>a.localeCompare(b));
     categories.forEach(cat => {
       const option = document.createElement('option');
       option.value = cat; option.textContent = cat;
@@ -316,10 +482,10 @@
     });
   }
   function searchItems() {
-    const query = document.getElementById('searchInput').value.toLowerCase();
+    const query = document.getElementById('searchInput').value.toLowerCase().trim();
     const selectedCategory = categoryFilter.value;
     const filtered = epis.filter(e =>
-      (e.nome.toLowerCase().includes(query) || e.ca.includes(query)) &&
+      (e.nome.toLowerCase().includes(query) || e.ca.includes(query) || e.categoria.toLowerCase().includes(query)) &&
       (selectedCategory === '' || e.categoria === selectedCategory)
     );
     renderCatalog(filtered);
@@ -341,8 +507,16 @@
     const nomes = document.getElementById("nomes").value.trim().split("\n").filter(Boolean);
     const empresa = document.getElementById("empresa").value.trim();
     const data = document.getElementById("data").value.trim();
-    document.getElementById("resultado").innerText =
-      nomes.map(nome => `${nome}, ${empresa}, , , ${data}`).join("\n");
+    const saida = nomes.map(nome => `${nome}, ${empresa}, , , ${data}`).join("\n");
+    document.getElementById("resultado").innerText = saida || "—";
+    showToast("Frases geradas.", "ok");
+  }
+  function exportFrasesTXT(){
+    const conteudo = document.getElementById("resultado").innerText || "";
+    const blob = new Blob([conteudo], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = Object.assign(document.createElement('a'), { href:url, download:'frases_empresa.txt' });
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
   }
 
   /* -------- Riscos por Empresa (dinâmico) -------- */
@@ -370,12 +544,14 @@
   function renderRiscosEmpresas(list) {
     const container = document.getElementById("listaRiscosEmpresas");
     container.innerHTML = list.map(item => {
-      const textoCopiar = `${item.risco} – ${item.empresa} – Setor ${item.setor}`;
+      const textoCopiar = `${item.risco} – ${item.empresa} – Setor ${item.setor}`.replace(/"/g, '&quot;');
       return `
         <div class="bloco">
           <p><strong>${item.emoji} ${item.risco}</strong><br>
-          <small>${item.empresa} – Setor ${item.setor}</small></p>
-          <button class="action" onclick="copiarTexto('${textoCopiar}')">Copiar</button>
+          <small class="muted">${item.empresa} – Setor ${item.setor}</small></p>
+          <div class="row">
+            <button class="action" onclick="copiarTexto('${textoCopiar}')">Copiar</button>
+          </div>
         </div>`;
     }).join('');
   }
@@ -388,7 +564,7 @@
   }
   renderRiscosEmpresas(riscosEmpresas);
 
-  /* ===== Tema escuro com memória ===== */
+  /* ===== Tema escuro com memória (mantido e refinado) ===== */
   const THEME_KEY = 'sst_theme';
   const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
@@ -405,6 +581,81 @@
     try { saved = localStorage.getItem(THEME_KEY); } catch(e){}
     applyTheme(saved ? saved : (prefersDark ? 'dark' : 'light'));
   })();
+
+  /* ===== Exportações ===== */
+  function exportEpisExcel(){
+    const dados = epis.map(e => ({ Categoria:e.categoria, Nome:e.nome, CA:e.ca, Imagem:e.imagem }));
+    const ws = XLSX.utils.json_to_sheet(dados);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "EPIs");
+    XLSX.writeFile(wb, "catalogo_epis.xlsx");
+  }
+  function exportEpisPDF(){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation:'p', unit:'pt', format:'a4' });
+    doc.setFontSize(14);
+    doc.text("Catálogo de EPIs", 40, 40);
+    const rows = epis.map(e => [e.categoria, e.nome, e.ca]);
+    doc.autoTable({
+      head:[["Categoria","Nome","CA"]],
+      body: rows,
+      startY: 60,
+      styles: { fontSize: 9, cellPadding: 4 },
+      headStyles: { fillColor: [44, 62, 80] }
+    });
+    doc.save("catalogo_epis.pdf");
+  }
+  function exportRiscosExcel(){
+    const dados = riscosEmpresas.map(r => ({ Emoji:r.emoji, Risco:r.risco, Empresa:r.empresa, Setor:r.setor }));
+    const ws = XLSX.utils.json_to_sheet(dados);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Riscos por Empresa");
+    XLSX.writeFile(wb, "riscos_por_empresa.xlsx");
+  }
+  function exportRiscosPDF(){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation:'p', unit:'pt', format:'a4' });
+    doc.setFontSize(14);
+    doc.text("Riscos por Empresa", 40, 40);
+    const rows = riscosEmpresas.map(r => [r.emoji, r.risco, r.empresa, r.setor]);
+    doc.autoTable({
+      head:[["","Risco","Empresa","Setor"]],
+      body: rows,
+      startY: 60,
+      styles: { fontSize: 9, cellPadding: 4 },
+      headStyles: { fillColor: [44, 62, 80] }
+    });
+    doc.save("riscos_por_empresa.pdf");
+  }
+  function exportTextoRiscosPDF(){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation:'p', unit:'pt', format:'a4' });
+    doc.setFontSize(14);
+    doc.text("Avaliação de Riscos - Textos", 40, 40);
+
+    const blocos = Array.from(document.querySelectorAll('#conteudo .bloco')).map(b=>({
+      titulo: b.querySelector('h3')?.innerText || '',
+      texto:  b.querySelector('p')?.innerText || ''
+    }));
+
+    let y = 60;
+    doc.setFontSize(11);
+    blocos.forEach((b, idx)=>{
+      if(y > 760){ doc.addPage(); y=40; }
+      doc.setFont(undefined,'bold');
+      doc.text(b.titulo, 40, y); y += 14;
+      doc.setFont(undefined,'normal');
+      const split = doc.splitTextToSize(b.texto, 515);
+      doc.text(split, 40, y);
+      y += split.length * 12 + 10;
+    });
+    doc.save("avaliacao_riscos_textos.pdf");
+  }
+
+  /* ===== Acessibilidade extra: Enter confirma modal ===== */
+  document.getElementById('inputSenha').addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){ e.preventDefault(); confirmarSenha(); }
+  });
 </script>
 
 </body>
