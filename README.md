@@ -161,7 +161,7 @@
 </footer>
 
 <script>
-  const senhaCorreta = "SG393"; // altere para a senha que você quiser
+  const senhaCorreta = "SG3933"; // altere para a senha que você quiser
 const secoesProtegidas = ["riscos", "treinamento", "riscos_empresas"];
 
 function mostrar(secao) {
