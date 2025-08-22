@@ -156,7 +156,7 @@
 </head>
 <body>
 <header>
-  <h1>Painel Técnico - Segurança do Trabalho (Unificado)</h1>
+  <h1>Segurança do Trabalho</h1>
   <button class="theme-toggle" aria-label="Alternar Tema" onclick="toggleTheme()">Alternar Tema</button>
 </header>
 
